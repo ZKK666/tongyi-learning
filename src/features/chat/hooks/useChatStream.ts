@@ -19,7 +19,7 @@
 import { useRef, useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import type { Message, Segment } from '@/shared/types';
-import { createLogger } from '@/shared/utils';
+import { createLogger, getAuthHeaders } from '@/shared/utils';
 
 const logger = createLogger('useChatStream');
 
@@ -104,9 +104,7 @@ export function useChatStream(): UseChatStreamReturn {
         // 发起流式请求（会被 MSW 拦截）
         const response = await fetch('/api/chat/stream', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: getAuthHeaders(),
           body: JSON.stringify(params),
           signal: abortControllerRef.current.signal,
         });

@@ -23,8 +23,10 @@ import {
   HttpStatus,
   NotFoundException,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { SessionService } from './session.service';
 import { ChatStore } from '../chat/chat.store';
+import { CreateSessionDto } from './dto/create-session.dto';
 import type { Session, Message } from '../common/types';
 
 /**
@@ -37,6 +39,8 @@ interface MessagesPage {
   total: number;
 }
 
+@ApiTags('会话')
+@ApiBearerAuth()
 @Controller('api/sessions')
 export class SessionController {
   constructor(
@@ -57,6 +61,8 @@ export class SessionController {
    * 注意：此路由必须在 :id 路由之前定义，否则会被 :id 匹配
    */
   @Get(':id/messages')
+  @ApiOperation({ summary: '获取会话消息列表' })
+  @ApiResponse({ status: 200, description: '获取成功' })
   async getMessages(
     @Param('id') id: string,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -86,6 +92,8 @@ export class SessionController {
    * - 返回格式与前端 MSW Mock 保持一致
    */
   @Get()
+  @ApiOperation({ summary: '获取所有会话' })
+  @ApiResponse({ status: 200, description: '获取成功' })
   async findAll(): Promise<{ sessions: Session[]; total: number }> {
     const sessions = await this.sessionService.findAll();
 
@@ -105,6 +113,9 @@ export class SessionController {
    * - 找不到时抛出 NotFoundException
    */
   @Get(':id')
+  @ApiOperation({ summary: '获取单个会话' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  @ApiResponse({ status: 404, description: '会话不存在' })
   async findOne(@Param('id') id: string): Promise<Session> {
     const session = await this.sessionService.findById(id);
 
@@ -125,10 +136,12 @@ export class SessionController {
    * - 返回格式与前端 MSW Mock 保持一致
    */
   @Post()
+  @ApiOperation({ summary: '创建会话' })
+  @ApiResponse({ status: 201, description: '创建成功' })
   async create(
-    @Body() body: { title?: string },
+    @Body() dto: CreateSessionDto,
   ): Promise<Session> {
-    const session = await this.sessionService.create(body.title);
+    const session = await this.sessionService.create(dto.title);
 
     return session;
   }
@@ -143,6 +156,9 @@ export class SessionController {
    * - PUT 用于完全替换（本项目不需要）
    */
   @Patch(':id')
+  @ApiOperation({ summary: '更新会话标题' })
+  @ApiResponse({ status: 200, description: '更新成功' })
+  @ApiResponse({ status: 404, description: '会话不存在' })
   async update(
     @Param('id') id: string,
     @Body() body: { title: string },
@@ -167,6 +183,9 @@ export class SessionController {
    */
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: '删除会话' })
+  @ApiResponse({ status: 204, description: '删除成功' })
+  @ApiResponse({ status: 404, description: '会话不存在' })
   async delete(@Param('id') id: string): Promise<void> {
     const result = await this.sessionService.delete(id);
 

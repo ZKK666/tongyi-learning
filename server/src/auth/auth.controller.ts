@@ -10,12 +10,18 @@
  * - @Post() - 处理 POST 请求
  * - @Body() - 获取请求体
  * - @HttpCode() - 设置响应状态码
+ * - @Public() - 标记为公开路由（不需要认证）
  */
 
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Get } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import type { LoginDto, ApiResponse, User } from '../common/types';
+import { LoginDto } from './dto/login.dto';
+import { Public } from './decorators/public.decorator';
+import { CurrentUser, CurrentUserData } from './decorators/current-user.decorator';
+import type { User } from '../common/types';
 
+@ApiTags('认证')
 @Controller('api/auth')
 export class AuthController {
   /**
@@ -34,11 +40,17 @@ export class AuthController {
    * POST /api/auth/login
    *
    * 学习要点：
+   * - @Public() 标记为公开路由，不需要认证
    * - @HttpCode(200) 覆盖默认的 201（POST 默认返回 201）
-   * - 返回格式与前端 MSW Mock 保持一致
+   * - LoginDto 会被 ValidationPipe 自动验证
    */
+  @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '用户登录' })
+  @ApiResponse({ status: 200, description: '登录成功' })
+  @ApiResponse({ status: 400, description: '参数验证失败' })
+  @ApiResponse({ status: 401, description: '用户名或密码错误' })
   async login(@Body() loginDto: LoginDto): Promise<{ token: string; user: User }> {
     console.log('[AuthController] 登录请求:', loginDto.username);
 
@@ -53,17 +65,40 @@ export class AuthController {
    * POST /api/auth/logout
    *
    * 学习要点：
-   * - 简单的 Mock 实现，直接返回成功
+   * - 需要认证才能登出（验证 token 有效性）
    * - 真实项目需要清除 token/session
    */
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async logout(): Promise<ApiResponse<null>> {
+  @ApiOperation({ summary: '用户登出' })
+  @ApiResponse({ status: 200, description: '登出成功' })
+  async logout(): Promise<{ message: string }> {
     console.log('[AuthController] 登出请求');
 
     return {
-      success: true,
-      data: null,
+      message: '登出成功',
+    };
+  }
+
+  /**
+   * 获取当前用户信息
+   *
+   * GET /api/auth/profile
+   *
+   * 学习要点：
+   * - @CurrentUser() 获取当前登录用户
+   * - 需要认证才能访问
+   */
+  @Get('profile')
+  @ApiOperation({ summary: '获取当前用户信息' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  @ApiResponse({ status: 401, description: '未登录' })
+  getProfile(@CurrentUser() user: CurrentUserData) {
+    console.log('[AuthController] 获取用户信息:', user.username);
+
+    return {
+      id: user.id,
+      username: user.username,
     };
   }
 }

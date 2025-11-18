@@ -21,9 +21,13 @@ import {
   Res,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { ChatService } from './chat.service';
-import type { ChatRequestDto, Message, ApiResponse } from '../common/types';
+import { ChatRequestDto } from './dto/chat-request.dto';
+import type { Message, ApiResponse as ApiResponseType } from '../common/types';
 
+@ApiTags('聊天')
+@ApiBearerAuth()
 @Controller('api/chat')
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
@@ -34,9 +38,11 @@ export class ChatController {
    * GET /api/chat/:sessionId/messages
    */
   @Get(':sessionId/messages')
+  @ApiOperation({ summary: '获取会话消息列表' })
+  @ApiResponse({ status: 200, description: '获取成功' })
   async getMessages(
     @Param('sessionId') sessionId: string,
-  ): Promise<ApiResponse<Message[]>> {
+  ): Promise<ApiResponseType<Message[]>> {
     const messages = await this.chatService.getMessages(sessionId);
 
     return {
@@ -67,6 +73,8 @@ export class ChatController {
    * 每条消息以 "data: " 开头，两个换行结束
    */
   @Post('stream')
+  @ApiOperation({ summary: '流式聊天' })
+  @ApiResponse({ status: 200, description: 'SSE 流式响应' })
   async stream(
     @Body() dto: ChatRequestDto,
     @Res() res: Response,

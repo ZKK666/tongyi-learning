@@ -10,6 +10,7 @@
  */
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { Message } from '@/shared/types';
+import { getAuthHeaders } from '@/shared/utils';
 
 interface MessagesPage {
   messages: Message[];
@@ -39,7 +40,10 @@ async function fetchMessages(
   }
 
   const response = await fetch(
-    `/api/sessions/${sessionId}/messages?${params.toString()}`
+    `/api/sessions/${sessionId}/messages?${params.toString()}`,
+    {
+      headers: getAuthHeaders(),
+    }
   );
 
   if (!response.ok) {

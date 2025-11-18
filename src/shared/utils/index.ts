@@ -3,3 +3,4 @@
  */
 export { storage } from './storage';
 export { logger, createLogger } from './logger';
+export { api, getAuthHeaders, ApiError } from './api';
