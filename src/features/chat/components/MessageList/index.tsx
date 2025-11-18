@@ -18,6 +18,24 @@ import { useChatStore } from '../../stores/chatStore';
 import type { Message, Segment } from '@/shared/types';
 
 /**
+ * 自定义比较函数
+ *
+ * 学习要点：
+ * - Zustand 默认使用 Object.is 比较
+ * - 对于对象类型的状态，需要自定义比较
+ * - 这里比较 streamingMessage.content 来触发更新
+ */
+function streamingMessageEqual(
+  a: { id: string; content: string; segments: Segment[] } | null,
+  b: { id: string; content: string; segments: Segment[] } | null
+): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  // 比较 content 来检测打字机更新
+  return a.id === b.id && a.content === b.content && a.segments === b.segments;
+}
+
+/**
  * 消息列表组件
  */
 export function MessageList() {
@@ -28,10 +46,14 @@ export function MessageList() {
    *
    * 学习要点：
    * - Zustand 需要使用选择器来正确触发重新渲染
-   * - 直接解构 useChatStore() 可能不会响应内部状态变化
-   * - 每个状态单独选择，确保精确更新
+   * - 对于流式消息，需要订阅 content 来触发每次更新
+   * - 使用自定义比较函数确保正确检测变化
    */
-  const streamingMessage = useChatStore((state) => state.streamingMessage);
+  const streamingMessage = useChatStore(
+    (state) => state.streamingMessage,
+    // 自定义比较：返回 true 表示相等（不更新），false 表示不相等（需要更新）
+    streamingMessageEqual
+  );
   const currentSessionId = useChatStore((state) => state.currentSessionId);
   const messagesBySession = useChatStore((state) => state.messagesBySession);
 

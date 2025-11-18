@@ -25,6 +25,25 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3001',
         changeOrigin: true,
+        /**
+         * 配置 SSE 支持
+         *
+         * 学习要点：
+         * - configure 允许自定义代理行为
+         * - 对于 SSE 请求，需要禁用代理缓冲
+         * - 否则数据会被缓冲，无法实现打字机效果
+         */
+        configure: (proxy) => {
+          // 监听代理响应，对 SSE 响应禁用缓冲
+          proxy.on('proxyRes', (proxyRes, req) => {
+            if (req.url?.includes('/chat/stream')) {
+              // 确保响应不被缓冲
+              // 设置为 undefined 让 Node.js 使用默认的非缓冲行为
+              proxyRes.headers['cache-control'] = 'no-cache';
+              proxyRes.headers['x-accel-buffering'] = 'no';
+            }
+          });
+        },
       },
     },
   },
