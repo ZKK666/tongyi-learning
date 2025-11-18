@@ -13,6 +13,47 @@ const sessions: Map<string, {
   messageCount: number;
 }> = new Map();
 
+// 存储消息数据（按会话 ID 分组）
+const messageStore: Map<string, Array<{
+  id: string;
+  sessionId: string;
+  role: 'user' | 'assistant';
+  segments: Array<{ type: string; text?: string; [key: string]: unknown }>;
+  status: string;
+  createdAt: string;
+}>> = new Map();
+
+// 生成模拟历史消息
+function generateMockMessages(sessionId: string, count: number) {
+  const messages = [];
+  const now = new Date();
+
+  for (let i = count - 1; i >= 0; i--) {
+    const isUser = i % 2 === 0;
+    const timestamp = new Date(now.getTime() - i * 60000); // 每条消息间隔1分钟
+
+    messages.push({
+      id: `msg_${sessionId}_${i}`,
+      sessionId,
+      role: isUser ? 'user' as const : 'assistant' as const,
+      segments: [{
+        type: 'text',
+        text: isUser
+          ? `这是第 ${Math.floor(i / 2) + 1} 个用户问题`
+          : `这是对第 ${Math.floor(i / 2) + 1} 个问题的回答。我会尽力提供详细和有帮助的信息。`,
+      }],
+      status: 'done',
+      createdAt: timestamp.toISOString(),
+    });
+  }
+
+  return messages;
+}
+
+// 初始化示例会话的消息
+messageStore.set('session_1', generateMockMessages('session_1', 20));
+messageStore.set('session_2', generateMockMessages('session_2', 10));
+
 // 初始化一些示例会话
 sessions.set('session_1', {
   id: 'session_1',
@@ -130,5 +171,72 @@ export const sessionHandlers = [
       sessions: results,
       total: results.length,
     });
+  }),
+
+  // 获取会话消息（支持分页）
+  http.get('/api/sessions/:id/messages', ({ params, request }) => {
+    const { id } = params;
+    const url = new URL(request.url);
+
+    // 分页参数
+    const cursor = url.searchParams.get('cursor'); // 游标（消息 ID）
+    const limit = parseInt(url.searchParams.get('limit') || '10');
+
+    // 获取会话消息
+    let messages = messageStore.get(id as string) || [];
+
+    // 如果有游标，从游标位置开始获取
+    if (cursor) {
+      const cursorIndex = messages.findIndex((m) => m.id === cursor);
+      if (cursorIndex > 0) {
+        messages = messages.slice(0, cursorIndex);
+      }
+    }
+
+    // 获取最新的 limit 条消息（从末尾开始）
+    const startIndex = Math.max(0, messages.length - limit);
+    const pageMessages = messages.slice(startIndex);
+
+    // 计算下一个游标
+    const nextCursor = startIndex > 0 ? messages[startIndex - 1]?.id : null;
+
+    return HttpResponse.json({
+      messages: pageMessages,
+      nextCursor,
+      hasMore: startIndex > 0,
+      total: (messageStore.get(id as string) || []).length,
+    });
+  }),
+
+  // 添加消息到会话
+  http.post('/api/sessions/:id/messages', async ({ params, request }) => {
+    const { id } = params;
+    const body = await request.json() as {
+      role: 'user' | 'assistant';
+      segments: Array<{ type: string; text?: string; [key: string]: unknown }>;
+    };
+
+    const message = {
+      id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      sessionId: id as string,
+      role: body.role,
+      segments: body.segments,
+      status: 'done',
+      createdAt: new Date().toISOString(),
+    };
+
+    // 添加到消息存储
+    const sessionMessages = messageStore.get(id as string) || [];
+    sessionMessages.push(message);
+    messageStore.set(id as string, sessionMessages);
+
+    // 更新会话的消息计数
+    const session = sessions.get(id as string);
+    if (session) {
+      session.messageCount = sessionMessages.length;
+      session.updatedAt = new Date().toISOString();
+    }
+
+    return HttpResponse.json(message, { status: 201 });
   }),
 ];
