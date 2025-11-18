@@ -16,6 +16,12 @@
  * 7. Exception Filters（异常过滤器）
  */
 
+// Node.js v18 需要显式导入 crypto（v19+ 已全局可用）
+import * as crypto from 'crypto';
+if (!globalThis.crypto) {
+  globalThis.crypto = crypto as any;
+}
+
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
