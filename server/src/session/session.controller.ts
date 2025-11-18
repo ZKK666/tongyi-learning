@@ -18,16 +18,62 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   HttpCode,
   HttpStatus,
   NotFoundException,
 } from '@nestjs/common';
 import { SessionService } from './session.service';
-import type { Session, ApiResponse } from '../common/types';
+import { ChatStore } from '../chat/chat.store';
+import type { Session, Message } from '../common/types';
+
+/**
+ * 消息分页响应格式
+ */
+interface MessagesPage {
+  messages: Message[];
+  nextCursor: string | null;
+  hasMore: boolean;
+  total: number;
+}
 
 @Controller('api/sessions')
 export class SessionController {
-  constructor(private readonly sessionService: SessionService) {}
+  constructor(
+    private readonly sessionService: SessionService,
+    private readonly chatStore: ChatStore,
+  ) {}
+
+  /**
+   * 获取会话消息列表
+   *
+   * GET /api/sessions/:id/messages
+   *
+   * 学习要点：
+   * - @Query() 获取查询参数
+   * - 支持游标分页（cursor-based pagination）
+   * - 返回分页格式数据
+   *
+   * 注意：此路由必须在 :id 路由之前定义，否则会被 :id 匹配
+   */
+  @Get(':id/messages')
+  async getMessages(
+    @Param('id') id: string,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limitStr?: string,
+  ): Promise<MessagesPage> {
+    const limit = parseInt(limitStr || '20', 10);
+    const allMessages = this.chatStore.getBySessionId(id);
+
+    // 简单实现：返回所有消息（不做真正的分页）
+    // 真实项目中应该根据 cursor 和 limit 进行分页
+    return {
+      messages: allMessages,
+      nextCursor: null,
+      hasMore: false,
+      total: allMessages.length,
+    };
+  }
 
   /**
    * 获取所有会话
@@ -36,15 +82,15 @@ export class SessionController {
    *
    * 学习要点：
    * - GET 请求不需要 @Body()
-   * - 返回数组类型
+   * - 返回格式与前端 MSW Mock 保持一致
    */
   @Get()
-  async findAll(): Promise<ApiResponse<Session[]>> {
+  async findAll(): Promise<{ sessions: Session[]; total: number }> {
     const sessions = await this.sessionService.findAll();
 
     return {
-      success: true,
-      data: sessions,
+      sessions,
+      total: sessions.length,
     };
   }
 
@@ -58,17 +104,14 @@ export class SessionController {
    * - 找不到时抛出 NotFoundException
    */
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<ApiResponse<Session>> {
+  async findOne(@Param('id') id: string): Promise<Session> {
     const session = await this.sessionService.findById(id);
 
     if (!session) {
       throw new NotFoundException(`会话 ${id} 不存在`);
     }
 
-    return {
-      success: true,
-      data: session,
-    };
+    return session;
   }
 
   /**
@@ -78,18 +121,15 @@ export class SessionController {
    *
    * 学习要点：
    * - POST 默认返回 201 Created
-   * - @Body() 获取请求体
+   * - 返回格式与前端 MSW Mock 保持一致
    */
   @Post()
   async create(
     @Body() body: { title?: string },
-  ): Promise<ApiResponse<Session>> {
+  ): Promise<Session> {
     const session = await this.sessionService.create(body.title);
 
-    return {
-      success: true,
-      data: session,
-    };
+    return session;
   }
 
   /**
@@ -105,17 +145,14 @@ export class SessionController {
   async update(
     @Param('id') id: string,
     @Body() body: { title: string },
-  ): Promise<ApiResponse<Session>> {
+  ): Promise<Session> {
     const session = await this.sessionService.updateTitle(id, body.title);
 
     if (!session) {
       throw new NotFoundException(`会话 ${id} 不存在`);
     }
 
-    return {
-      success: true,
-      data: session,
-    };
+    return session;
   }
 
   /**
