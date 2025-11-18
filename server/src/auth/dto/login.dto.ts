@@ -33,11 +33,10 @@ export class LoginDto {
 
   @ApiProperty({
     description: '密码',
-    example: '123456',
-    minLength: 6,
+    example: 'admin',
+    minLength: 1,
   })
   @IsString({ message: '密码必须是字符串' })
   @IsNotEmpty({ message: '密码不能为空' })
-  @MinLength(6, { message: '密码至少6个字符' })
   password: string;
 }
