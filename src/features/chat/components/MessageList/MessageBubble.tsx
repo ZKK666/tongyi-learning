@@ -4,15 +4,19 @@
  * 职责：
  * - 渲染单条消息
  * - 区分用户/AI 消息样式
- * - 渲染不同类型的 segments
+ * - 渲染不同类型的 segments（文本、卡片）
+ * - 支持 Markdown 渲染
  */
 import { memo } from 'react';
-import { Avatar, Tooltip } from 'antd';
-import { UserOutlined, RobotOutlined, CopyOutlined } from '@ant-design/icons';
+import { Avatar, Tooltip, App } from 'antd';
+import { UserOutlined, RobotOutlined, CopyOutlined, CheckOutlined } from '@ant-design/icons';
+import { useState } from 'react';
 import dayjs from 'dayjs';
 import type { Message, Segment } from '@/shared/types';
 import { isTextSegment, isCardSegment } from '@/shared/types';
 import { ROLE_NAMES } from '@/shared/constants';
+import { MarkdownRenderer } from '@/shared/components/MarkdownRenderer';
+import { CardRenderer } from '@/features/cards';
 
 interface MessageBubbleProps {
   message: Message;
@@ -22,27 +26,28 @@ interface MessageBubbleProps {
 /**
  * 渲染 Segment 内容
  */
-function SegmentRenderer({ segment }: { segment: Segment }) {
+function SegmentRenderer({
+  segment,
+  isUserMessage
+}: {
+  segment: Segment;
+  isUserMessage: boolean;
+}) {
   if (isTextSegment(segment)) {
-    return (
-      <div className="whitespace-pre-wrap break-words">
-        {segment.text}
-      </div>
-    );
+    // 用户消息直接显示文本，AI 消息使用 Markdown 渲染
+    if (isUserMessage) {
+      return (
+        <div className="whitespace-pre-wrap break-words">
+          {segment.text}
+        </div>
+      );
+    }
+
+    return <MarkdownRenderer content={segment.text} />;
   }
 
   if (isCardSegment(segment)) {
-    // TODO: Phase 11 实现卡片渲染
-    return (
-      <div className="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg mt-2">
-        <div className="text-sm text-gray-500">
-          [卡片: {segment.cardType}]
-        </div>
-        <pre className="text-xs mt-2 overflow-auto">
-          {JSON.stringify(segment.payload, null, 2)}
-        </pre>
-      </div>
-    );
+    return <CardRenderer segment={segment} />;
   }
 
   return null;
@@ -55,8 +60,27 @@ function SegmentRenderer({ segment }: { segment: Segment }) {
  */
 export const MessageBubble = memo(
   function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
+    const [copied, setCopied] = useState(false);
+    const { message: messageApi } = App.useApp();
     const isUser = message.role === 'user';
     const roleName = ROLE_NAMES[message.role] || message.role;
+
+    // 复制消息内容
+    const handleCopy = async () => {
+      const text = message.segments
+        .filter(isTextSegment)
+        .map((s) => s.text)
+        .join('\n');
+
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        messageApi.success('已复制到剪贴板');
+        setTimeout(() => setCopied(false), 2000);
+      } catch {
+        messageApi.error('复制失败');
+      }
+    };
 
     return (
       <div
@@ -94,7 +118,11 @@ export const MessageBubble = memo(
           {/* 消息内容区域 */}
           <div className="text-gray-800 dark:text-gray-200 leading-relaxed">
             {message.segments.map((segment, index) => (
-              <SegmentRenderer key={index} segment={segment} />
+              <SegmentRenderer
+                key={index}
+                segment={segment}
+                isUserMessage={isUser}
+              />
             ))}
 
             {/* 流式输出光标 */}
@@ -106,18 +134,16 @@ export const MessageBubble = memo(
           {/* 操作按钮（仅 AI 消息显示） */}
           {!isUser && message.status === 'done' && (
             <div className="flex items-center gap-2 mt-3">
-              <Tooltip title="复制">
+              <Tooltip title={copied ? '已复制' : '复制'}>
                 <button
                   className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                  onClick={() => {
-                    const text = message.segments
-                      .filter(isTextSegment)
-                      .map((s) => s.text)
-                      .join('\n');
-                    navigator.clipboard.writeText(text);
-                  }}
+                  onClick={handleCopy}
                 >
-                  <CopyOutlined className="text-sm" />
+                  {copied ? (
+                    <CheckOutlined className="text-sm text-green-500" />
+                  ) : (
+                    <CopyOutlined className="text-sm" />
+                  )}
                 </button>
               </Tooltip>
             </div>
