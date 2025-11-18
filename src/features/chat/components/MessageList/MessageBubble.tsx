@@ -159,11 +159,28 @@ export const MessageBubble = memo(
   },
   // 自定义比较函数
   (prev, next) => {
-    return (
-      prev.message.id === next.message.id &&
-      prev.message.status === next.message.status &&
-      prev.message.segments.length === next.message.segments.length &&
-      prev.isStreaming === next.isStreaming
-    );
+    // 基础属性比较
+    if (
+      prev.message.id !== next.message.id ||
+      prev.message.status !== next.message.status ||
+      prev.message.segments.length !== next.message.segments.length ||
+      prev.isStreaming !== next.isStreaming
+    ) {
+      return false; // 不相等，需要重新渲染
+    }
+
+    // 流式消息需要比较文本内容，否则打字机效果不会更新
+    if (prev.isStreaming || next.isStreaming) {
+      // 比较第一个文本段落的内容（流式消息通常只有一个文本段落）
+      const prevSegment = prev.message.segments[0];
+      const nextSegment = next.message.segments[0];
+
+      if (prevSegment && nextSegment &&
+          isTextSegment(prevSegment) && isTextSegment(nextSegment)) {
+        return prevSegment.text === nextSegment.text;
+      }
+    }
+
+    return true; // 相等，不需要重新渲染
   }
 );
