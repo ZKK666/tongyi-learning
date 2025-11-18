@@ -43,7 +43,8 @@ export interface CardProps<T = unknown> {
  */
 export interface CardRegistryItem {
   /** 卡片组件 */
-  component: LazyExoticComponent<ComponentType<CardProps>> | ComponentType<CardProps>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  component: LazyExoticComponent<ComponentType<any>> | ComponentType<any>;
   /** 卡片元数据 */
   meta: CardMeta;
 }

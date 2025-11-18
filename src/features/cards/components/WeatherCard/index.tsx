@@ -4,10 +4,7 @@
  * 显示城市天气信息，包括当前天气和未来几天预报
  */
 import { Card, Divider } from 'antd';
-import {
-  CloudOutlined,
-  EnvironmentOutlined,
-} from '@ant-design/icons';
+import { EnvironmentOutlined } from '@ant-design/icons';
 import type { CardProps, WeatherPayload } from '../../types';
 
 /**

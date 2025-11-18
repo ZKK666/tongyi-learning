@@ -89,13 +89,16 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
         remarkPlugins={[remarkGfm]}
         components={{
           // 代码块渲染
-          code({ inline, className, children, ...props }) {
+          code({ className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || '');
             const language = match ? match[1] : '';
             const code = String(children).replace(/\n$/, '');
 
+            // 判断是否为行内代码：没有语言标识且代码中没有换行符
+            const isInline = !match && !code.includes('\n');
+
             // 行内代码
-            if (inline) {
+            if (isInline) {
               return (
                 <code
                   className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-sm"
@@ -107,7 +110,7 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
             }
 
             // 代码块
-            return <CodeBlock language={language} code={code} />;
+            return <CodeBlock language={language || 'text'} code={code} />;
           },
 
           // 链接渲染（新窗口打开）
