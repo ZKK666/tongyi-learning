@@ -87,8 +87,10 @@ export class ChatController {
         dto,
         // 发送数据块
         (data: Record<string, unknown>) => {
+          // NestJS SSE 会自动将 data 序列化为 JSON
+          // 发送格式：data: {"delta":"..."}\n\n
           subscriber.next({
-            data: JSON.stringify(data),
+            data,
           } as MessageEvent);
         },
         // 完成
