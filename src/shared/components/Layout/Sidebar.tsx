@@ -4,19 +4,21 @@
  * 职责：
  * - 显示会话列表
  * - 新建会话按钮
+ * - 删除会话
  * - 用户信息和设置入口
  *
  * 特性：
  * - PC端可收起/展开
  * - 移动端为抽屉模式
  */
-import { Button, Input, Tooltip } from 'antd';
+import { Button, Input, Tooltip, Popconfirm } from 'antd';
 import {
   PlusOutlined,
   SearchOutlined,
   SettingOutlined,
   LogoutOutlined,
   UserOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useUIStore } from '@/features/settings/stores/uiStore';
@@ -33,7 +35,7 @@ export function Sidebar() {
   const { isMobile } = useResponsive();
   const { sidebarOpen, setSidebarOpen } = useUIStore();
   const { user, logout } = useAuthStore();
-  const { sessions, currentSessionId, setCurrentSession, createSession } = useChatStore();
+  const { sessions, currentSessionId, setCurrentSession, createSession, deleteSession } = useChatStore();
 
   // 处理新建会话
   const handleNewChat = () => {
@@ -49,6 +51,12 @@ export function Sidebar() {
     if (isMobile) {
       setSidebarOpen(false);
     }
+  };
+
+  // 处理删除会话
+  const handleDeleteSession = (e: React.MouseEvent, sessionId: string) => {
+    e.stopPropagation(); // 阻止触发选择会话
+    deleteSession(sessionId);
   };
 
   // 处理登出
@@ -117,8 +125,8 @@ export function Sidebar() {
               <div
                 key={session.id}
                 className={`
-                  px-3 py-2.5 rounded-lg cursor-pointer
-                  transition-colors duration-150
+                  group px-3 py-2.5 rounded-lg cursor-pointer
+                  transition-colors duration-150 relative
                   ${
                     session.id === currentSessionId
                       ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
@@ -127,12 +135,36 @@ export function Sidebar() {
                 `}
                 onClick={() => handleSelectSession(session.id)}
               >
-                <div className="truncate text-sm font-medium">
+                <div className="truncate text-sm font-medium pr-6">
                   {session.title}
                 </div>
                 <div className="text-xs text-gray-400 mt-0.5">
                   {session.messageCount} 条消息
                 </div>
+
+                {/* 删除按钮 */}
+                <Popconfirm
+                  title="删除会话"
+                  description="确定要删除这个会话吗？"
+                  onConfirm={(e) => handleDeleteSession(e as unknown as React.MouseEvent, session.id)}
+                  onCancel={(e) => e?.stopPropagation()}
+                  okText="删除"
+                  cancelText="取消"
+                  placement="right"
+                >
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<DeleteOutlined />}
+                    className="
+                      absolute right-1 top-1/2 -translate-y-1/2
+                      opacity-0 group-hover:opacity-100
+                      text-gray-400 hover:text-red-500
+                      transition-opacity
+                    "
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </Popconfirm>
               </div>
             ))}
           </div>
