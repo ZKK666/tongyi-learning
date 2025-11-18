@@ -47,6 +47,13 @@
 |------|------|------|
 | 框架 | NestJS | 企业级 Node.js 框架 |
 | 语言 | TypeScript | 前后端类型统一 |
+| 认证 | Passport + JWT | 标准 JWT 认证方案 |
+| 验证 | class-validator | DTO 数据验证 |
+| 配置 | @nestjs/config + Joi | 环境变量管理与验证 |
+| 定时 | @nestjs/schedule | Cron 定时任务 |
+| 事件 | @nestjs/event-emitter | 事件驱动解耦 |
+| 限流 | @nestjs/throttler | API 限流保护 |
+| 文档 | Swagger | 自动生成 API 文档 |
 | 存储 | 内存存储 | Map 结构，便于学习 |
 | 流式 | SSE | Server-Sent Events |
 
@@ -83,7 +90,9 @@ npm run dev:api
 ### 测试账号
 
 - 管理员：`admin` / `admin`
-- 普通用户：`user` / `user`（任意账号密码均可登录）
+- 普通用户：`user` / `user`
+
+> 用户名至少2个字符，密码任意
 
 ## 项目结构
 
@@ -108,9 +117,23 @@ tongyi-learning/
 │   ├── services/               # API 服务层
 │   └── mocks/                  # MSW Mock 数据
 ├── server/                     # 后端源码 (NestJS)
+│   ├── .env.example           # 环境变量示例
 │   └── src/
-│       ├── common/            # 共享类型和 Mock 数据
+│       ├── common/            # 共享资源
+│       │   ├── types/         # 类型定义
+│       │   ├── mock-data/     # Mock 数据
+│       │   ├── filters/       # 异常过滤器
+│       │   ├── interceptors/  # 拦截器
+│       │   ├── services/      # 公共服务（定时任务）
+│       │   ├── events/        # 事件定义
+│       │   └── listeners/     # 事件监听器
+│       ├── config/            # 配置模块
+│       │   ├── configuration.ts  # 配置工厂
+│       │   └── validation.ts     # Joi 验证
 │       ├── auth/              # 认证模块
+│       │   ├── dto/           # 数据传输对象
+│       │   ├── guards/        # 认证守卫
+│       │   └── strategies/    # Passport 策略
 │       ├── session/           # 会话模块
 │       ├── chat/              # 聊天模块（SSE）
 │       ├── app.module.ts      # 根模块
@@ -184,6 +207,62 @@ export const cardRegistry = {
 | GET | `/api/chat/:sessionId/messages` | 获取消息列表 |
 | POST | `/api/chat/stream` | 流式聊天（SSE） |
 
+### API 文档
+
+启动后端后访问 Swagger 文档：http://localhost:3001/api/docs
+
+## NestJS 后端特性
+
+### 已实现功能
+
+#### 核心模块
+- **ConfigModule** - 环境变量管理，Joi 验证
+- **ScheduleModule** - 定时任务（清理空会话、过期会话）
+- **EventEmitterModule** - 事件驱动（首条消息自动生成标题）
+
+#### 认证与安全
+- **JWT 认证** - Passport 策略，Bearer Token
+- **全局守卫** - 所有路由默认需要认证
+- **限流保护** - 多级限流（1秒/10秒/60秒）
+
+#### 数据处理
+- **ValidationPipe** - 请求数据自动验证
+- **DTO 验证** - class-validator 装饰器
+- **异常过滤器** - 统一错误响应格式
+
+#### 开发体验
+- **Swagger** - 自动生成 API 文档
+- **日志拦截器** - 请求日志记录
+- **响应转换** - 统一响应格式
+
+### 定时任务
+
+```typescript
+// 每小时清理空会话
+@Cron(CronExpression.EVERY_HOUR)
+handleCleanupEmptySessions() { ... }
+
+// 每天清理过期会话（30天）
+@Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+handleCleanupOldSessions() { ... }
+```
+
+### 事件系统
+
+```typescript
+// 发送消息时触发事件
+this.eventEmitter.emit(
+  EVENTS.MESSAGE_CREATED,
+  new MessageCreatedEvent(sessionId, messageId, content, 'user')
+);
+
+// 监听事件，自动生成标题
+@OnEvent(EVENTS.MESSAGE_CREATED, { async: true })
+async handleMessageCreated(event: MessageCreatedEvent) {
+  // 根据首条消息生成会话标题
+}
+```
+
 ## 开发命令
 
 ```bash
@@ -202,12 +281,39 @@ npm run server          # 启动后端服务
 
 ## 环境变量
 
+### 前端
+
 ```bash
 # .env.development（默认）
 VITE_USE_MOCK=true      # 使用 MSW Mock
 
 # .env.development.local（联调）
 VITE_USE_MOCK=false     # 连接 NestJS 后端
+```
+
+### 后端
+
+参考 `server/.env.example`：
+
+```bash
+# 基础配置
+NODE_ENV=development
+PORT=3001
+
+# JWT 配置
+JWT_SECRET=your-secret-key
+JWT_EXPIRES_IN=7d
+
+# 定时任务配置
+CLEANUP_CRON=0 * * * *      # 每小时清理
+TITLE_MAX_LENGTH=20         # 自动标题最大长度
+
+# 限流配置
+THROTTLE_TTL=60000
+THROTTLE_LIMIT=100
+
+# 流式输出配置
+STREAM_INTERVAL=30          # 打字机间隔(ms)
 ```
 
 ## 待完善功能
@@ -242,7 +348,14 @@ VITE_USE_MOCK=false     # 连接 NestJS 后端
 - 依赖注入（DI）模式
 - RESTful API 设计
 - SSE 流式输出实现
-- 内存存储到数据库的迁移路径
+- JWT 认证与 Passport 策略
+- DTO 验证与数据转换
+- 异常过滤器与拦截器
+- ConfigModule 配置管理
+- Schedule 定时任务
+- EventEmitter 事件驱动
+- Swagger API 文档自动生成
+- 限流与安全防护
 
 ## 参考资料
 
