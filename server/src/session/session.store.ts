@@ -102,6 +102,29 @@ export class SessionStore {
   }
 
   /**
+   * 使用指定 ID 创建会话
+   *
+   * 学习要点：
+   * - 当前端已生成 sessionId 时使用
+   * - 保持前后端 ID 一致性
+   */
+  createWithId(id: string, data: Omit<Session, 'id' | 'createdAt' | 'updatedAt'>): Session {
+    const now = new Date().toISOString();
+
+    const session: Session = {
+      id,
+      ...data,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    this.sessions.set(id, session);
+    console.log(`[SessionStore] 创建会话（指定ID）: ${id}`);
+
+    return session;
+  }
+
+  /**
    * 更新会话
    *
    * 学习要点：

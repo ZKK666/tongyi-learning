@@ -48,6 +48,16 @@ export class ChatService {
   ): () => void {
     const { sessionId, messages } = dto;
 
+    // 如果会话不存在，自动创建
+    // 这处理前端本地创建会话但后端不知道的情况
+    if (!this.sessionStore.findById(sessionId)) {
+      this.sessionStore.createWithId(sessionId, {
+        title: '新对话',
+        messageCount: 0,
+      });
+      console.log(`[ChatService] 自动创建会话: ${sessionId}`);
+    }
+
     // 获取用户最后一条消息
     const lastUserMessage = messages[messages.length - 1];
     const userContent = lastUserMessage?.content || '';

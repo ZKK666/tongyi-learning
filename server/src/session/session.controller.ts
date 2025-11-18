@@ -59,14 +59,15 @@ export class SessionController {
   @Get(':id/messages')
   async getMessages(
     @Param('id') id: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     @Query('cursor') cursor?: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     @Query('limit') limitStr?: string,
   ): Promise<MessagesPage> {
-    const limit = parseInt(limitStr || '20', 10);
     const allMessages = this.chatStore.getBySessionId(id);
 
     // 简单实现：返回所有消息（不做真正的分页）
-    // 真实项目中应该根据 cursor 和 limit 进行分页
+    // TODO: 真实项目中应该根据 cursor 和 limit 进行分页
     return {
       messages: allMessages,
       nextCursor: null,
