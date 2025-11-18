@@ -21,11 +21,44 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import dayjs from 'dayjs';
 import { useUIStore } from '@/features/settings/stores/uiStore';
 import { useAuthStore } from '@/features/auth/stores/authStore';
 import { useChatStore } from '@/features/chat/stores/chatStore';
 import { useResponsive } from '@/shared/hooks';
 import { UI } from '@/shared/constants';
+
+/**
+ * 格式化会话时间
+ */
+function formatSessionTime(dateStr: string): string {
+  const date = dayjs(dateStr);
+  const now = dayjs();
+
+  // 今天：显示时间
+  if (date.isSame(now, 'day')) {
+    return date.format('HH:mm');
+  }
+
+  // 昨天
+  if (date.isSame(now.subtract(1, 'day'), 'day')) {
+    return '昨天';
+  }
+
+  // 本周内：显示星期
+  if (date.isAfter(now.startOf('week'))) {
+    const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+    return weekDays[date.day()] || date.format('M月D日');
+  }
+
+  // 今年：显示月日
+  if (date.isSame(now, 'year')) {
+    return date.format('M月D日');
+  }
+
+  // 更早：显示年月日
+  return date.format('YYYY/M/D');
+}
 
 /**
  * 侧边栏组件
@@ -36,6 +69,11 @@ export function Sidebar() {
   const { sidebarOpen, setSidebarOpen } = useUIStore();
   const { user, logout } = useAuthStore();
   const { sessions, currentSessionId, setCurrentSession, createSession, deleteSession } = useChatStore();
+
+  // 按更新时间排序（最新的在前面）
+  const sortedSessions = [...sessions].sort(
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+  );
 
   // 处理新建会话
   const handleNewChat = () => {
@@ -115,13 +153,13 @@ export function Sidebar() {
 
       {/* 会话列表 */}
       <div className="flex-1 overflow-y-auto px-2">
-        {sessions.length === 0 ? (
+        {sortedSessions.length === 0 ? (
           <div className="text-center text-gray-400 py-8 text-sm">
             暂无会话
           </div>
         ) : (
           <div className="space-y-1">
-            {sessions.map((session) => (
+            {sortedSessions.map((session) => (
               <div
                 key={session.id}
                 className={`
@@ -135,8 +173,13 @@ export function Sidebar() {
                 `}
                 onClick={() => handleSelectSession(session.id)}
               >
-                <div className="truncate text-sm font-medium pr-6">
-                  {session.title}
+                <div className="flex items-center justify-between pr-6">
+                  <div className="truncate text-sm font-medium flex-1">
+                    {session.title}
+                  </div>
+                  <span className="text-xs text-gray-400 ml-2 flex-shrink-0">
+                    {formatSessionTime(session.updatedAt)}
+                  </span>
                 </div>
                 <div className="text-xs text-gray-400 mt-0.5">
                   {session.messageCount} 条消息
