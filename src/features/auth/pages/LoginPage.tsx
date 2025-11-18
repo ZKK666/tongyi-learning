@@ -73,8 +73,9 @@ export default function LoginPage() {
           </Form.Item>
         </Form>
 
-        <div className="text-center text-sm text-gray-500">
+        <div className="text-center text-sm text-gray-500 space-y-1">
           <p>测试账号：admin/admin 或 user/user</p>
+          <p className="text-xs text-gray-400">用户名至少2个字符，密码任意</p>
         </div>
       </Card>
     </div>
