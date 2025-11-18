@@ -15,6 +15,7 @@
 
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
+import { ConfigService } from '@nestjs/config';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
 /**
@@ -33,14 +34,20 @@ export interface JwtPayload {
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
+  /**
+   * 学习要点：
+   * - 在构造函数中注入 ConfigService
+   * - 使用 configService.get() 获取配置值
+   * - 这是 NestJS 推荐的配置获取方式
+   */
+  constructor(private configService: ConfigService) {
     super({
       // 从请求头的 Authorization: Bearer <token> 提取
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       // 不忽略过期时间
       ignoreExpiration: false,
-      // JWT 密钥（生产环境应该从环境变量获取）
-      secretOrKey: process.env.JWT_SECRET || 'tongyi-secret-key-2024',
+      // 从 ConfigService 获取 JWT 密钥
+      secretOrKey: configService.get<string>('jwt.secret', 'tongyi-secret-key-2024'),
     });
   }
 

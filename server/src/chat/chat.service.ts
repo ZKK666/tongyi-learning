@@ -8,10 +8,12 @@
  */
 
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { v4 as uuidv4 } from 'uuid';
 import { ChatStore } from './chat.store';
 import { SessionStore } from '../session/session.store';
 import { getResponseByKeyword } from '../common/mock-data/responses';
+import { MessageCreatedEvent, EVENTS } from '../common/events/message.events';
 import type { ChatRequestDto, Message } from '../common/types';
 
 @Injectable()
@@ -19,6 +21,7 @@ export class ChatService {
   constructor(
     private readonly chatStore: ChatStore,
     private readonly sessionStore: SessionStore,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   /**
@@ -73,6 +76,12 @@ export class ChatService {
     };
     this.chatStore.addMessage(userMessage);
     this.sessionStore.incrementMessageCount(sessionId);
+
+    // 触发消息创建事件（用于自动生成标题等）
+    this.eventEmitter.emit(
+      EVENTS.MESSAGE_CREATED,
+      new MessageCreatedEvent(sessionId, userMessage.id, userContent, 'user'),
+    );
 
     // 根据用户输入获取 Mock 响应
     const responseContent = getResponseByKeyword(userContent);

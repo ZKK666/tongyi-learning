@@ -185,4 +185,21 @@ export class SessionStore {
       session.updatedAt = new Date().toISOString();
     }
   }
+
+  /**
+   * 更新会话标题
+   *
+   * 学习要点：
+   * - 专门的方法处理标题更新
+   * - 由事件监听器调用，实现解耦
+   */
+  updateTitle(id: string, title: string): void {
+    const session = this.sessions.get(id);
+
+    if (session) {
+      session.title = title;
+      session.updatedAt = new Date().toISOString();
+      console.log(`[SessionStore] 更新会话标题: ${id} -> ${title}`);
+    }
+  }
 }

@@ -13,13 +13,15 @@
  * - exports: 导出供其他模块使用的服务
  *
  * JWT 配置说明：
- * - secret: 签名密钥（生产环境应从环境变量获取）
- * - signOptions.expiresIn: token 过期时间
+ * - registerAsync: 异步配置，可以注入 ConfigService
+ * - useFactory: 工厂函数，返回配置对象
+ * - inject: 注入依赖
  */
 
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -29,12 +31,15 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
   imports: [
     // Passport 模块
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    // JWT 模块配置
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'tongyi-secret-key-2024',
-      signOptions: {
-        expiresIn: '7d', // token 7 天过期
-      },
+    // JWT 模块 - 使用 registerAsync 从 ConfigService 获取配置
+    JwtModule.registerAsync({
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>('jwt.secret', 'tongyi-secret-key-2024'),
+        signOptions: {
+          expiresIn: configService.get<string>('jwt.expiresIn', '7d') as any,
+        },
+      }),
+      inject: [ConfigService],
     }),
   ],
   controllers: [AuthController],
