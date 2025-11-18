@@ -12,7 +12,7 @@
  * - 动态测量每条消息的高度
  * - 预估高度 + 实际测量结合
  */
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useMemo } from 'react';
 import { Empty } from 'antd';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { MessageBubble } from './MessageBubble';
@@ -61,24 +61,29 @@ export function MessageList() {
   const messages = getCurrentMessages();
 
   // 构建流式消息对象（如果有）
-  const streamingMessageObj: Message | null = streamingMessage
-    ? {
-        id: streamingMessage.id,
-        sessionId: currentSessionId || '',
-        role: 'assistant',
-        segments:
-          streamingMessage.segments.length > 0
-            ? streamingMessage.segments
-            : [{ type: 'text', text: streamingMessage.content } as Segment],
-        status: 'streaming',
-        createdAt: new Date().toISOString(),
-      }
-    : null;
+  const streamingMessageObj: Message | null = useMemo(
+    () =>
+      streamingMessage
+        ? {
+            id: streamingMessage.id,
+            sessionId: currentSessionId || '',
+            role: 'assistant',
+            segments:
+              streamingMessage.segments.length > 0
+                ? streamingMessage.segments
+                : [{ type: 'text', text: streamingMessage.content } as Segment],
+            status: 'streaming',
+            createdAt: new Date().toISOString(),
+          }
+        : null,
+    [streamingMessage, currentSessionId]
+  );
 
   // 合并历史消息和流式消息
-  const allMessages = streamingMessageObj
-    ? [...messages, streamingMessageObj]
-    : messages;
+  const allMessages = useMemo(
+    () => (streamingMessageObj ? [...messages, streamingMessageObj] : messages),
+    [messages, streamingMessageObj]
+  );
 
   // 虚拟滚动配置
   const virtualizer = useVirtualizer({

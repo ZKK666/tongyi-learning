@@ -72,9 +72,8 @@ export function useMessageSearch({ messages, contextLength = 50 }: UseMessageSea
         let startIndex = 0;
 
         // 查找所有匹配
-        while (true) {
-          const matchIndex = lowerText.indexOf(lowerKeyword, startIndex);
-          if (matchIndex === -1) break;
+        let matchIndex = lowerText.indexOf(lowerKeyword, startIndex);
+        while (matchIndex !== -1) {
 
           // 提取上下文
           const contextStart = Math.max(0, matchIndex - contextLength);
@@ -93,6 +92,7 @@ export function useMessageSearch({ messages, contextLength = 50 }: UseMessageSea
           });
 
           startIndex = matchIndex + 1;
+          matchIndex = lowerText.indexOf(lowerKeyword, startIndex);
         }
       }
     }
