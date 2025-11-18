@@ -3,7 +3,7 @@
  *
  * 学习要点：
  * - SSE (Server-Sent Events) 实现流式输出
- * - Observable 响应式编程处理流数据
+ * - 手动控制响应流实现真正的流式传输
  * - 打字机效果的核心实现
  *
  * SSE vs WebSocket：
@@ -18,10 +18,9 @@ import {
   Get,
   Body,
   Param,
-  Sse,
-  MessageEvent,
+  Res,
 } from '@nestjs/common';
-import { Observable } from 'rxjs';
+import { Response } from 'express';
 import { ChatService } from './chat.service';
 import type { ChatRequestDto, Message, ApiResponse } from '../common/types';
 
@@ -52,9 +51,9 @@ export class ChatController {
    * POST /api/chat/stream
    *
    * 学习要点：
-   * - @Sse() 装饰器标记这是 SSE 响应
-   * - 返回 Observable<MessageEvent>
-   * - MessageEvent 是 SSE 标准格式
+   * - 手动设置 SSE 响应头
+   * - 使用 Express Response 直接写入流
+   * - 确保数据立即发送，不被缓冲
    *
    * SSE 协议格式：
    * ```
@@ -68,42 +67,41 @@ export class ChatController {
    * 每条消息以 "data: " 开头，两个换行结束
    */
   @Post('stream')
-  @Sse()
-  stream(@Body() dto: ChatRequestDto): Observable<MessageEvent> {
+  async stream(
+    @Body() dto: ChatRequestDto,
+    @Res() res: Response,
+  ): Promise<void> {
     console.log('[ChatController] 流式请求:', dto.sessionId);
 
-    /**
-     * Observable 创建流
-     *
-     * 学习要点：
-     * - Observable 是 RxJS 的核心概念
-     * - subscriber.next() 发送数据
-     * - subscriber.complete() 结束流
-     * - 返回清理函数用于取消
-     */
-    return new Observable<MessageEvent>((subscriber) => {
-      // 调用服务处理流式响应
-      const cleanup = this.chatService.streamResponse(
-        dto,
-        // 发送数据块
-        (data: Record<string, unknown>) => {
-          // NestJS SSE 会自动将 data 序列化为 JSON
-          // 发送格式：data: {"delta":"..."}\n\n
-          subscriber.next({
-            data,
-          } as MessageEvent);
-        },
-        // 完成
-        () => {
-          subscriber.complete();
-        },
-      );
+    // 设置 SSE 响应头
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // 禁用 Nginx 缓冲
 
-      // 返回清理函数（客户端断开时调用）
-      return () => {
-        console.log('[ChatController] 客户端断开连接');
-        cleanup();
-      };
+    // 立即发送响应头
+    res.flushHeaders();
+
+    // 调用服务处理流式响应
+    const cleanup = this.chatService.streamResponse(
+      dto,
+      // 发送数据块
+      (data: Record<string, unknown>) => {
+        // 手动构造 SSE 格式：data: {...}\n\n
+        const sseData = `data: ${JSON.stringify(data)}\n\n`;
+        res.write(sseData);
+      },
+      // 完成
+      () => {
+        res.end();
+        console.log('[ChatController] 流式响应完成');
+      },
+    );
+
+    // 监听客户端断开连接
+    res.on('close', () => {
+      console.log('[ChatController] 客户端断开连接');
+      cleanup();
     });
   }
 }
