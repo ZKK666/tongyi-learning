@@ -14,16 +14,31 @@ import '../index.css';
 /**
  * 启动应用
  *
- * 开发环境下会先启动 MSW 进行 API Mock
- * 生产环境直接渲染应用
+ * 学习要点：
+ * - VITE_USE_MOCK 环境变量控制是否使用 MSW
+ * - 支持两种开发模式：
+ *   1. 前端独立开发（MSW Mock）
+ *   2. 前后端联调（NestJS 后端）
  */
 async function bootstrap() {
-  // 开发环境启动 MSW
-  if (import.meta.env.DEV) {
+  /**
+   * 是否使用 MSW Mock
+   *
+   * 配置方式：
+   * - .env.development: VITE_USE_MOCK=true（默认）
+   * - .env.development.local: VITE_USE_MOCK=false（连接后端）
+   */
+  const useMock = import.meta.env.VITE_USE_MOCK !== 'false';
+
+  // 开发环境且启用 Mock 时，启动 MSW
+  if (import.meta.env.DEV && useMock) {
     const { worker } = await import('@/mocks/browser');
     await worker.start({
       onUnhandledRequest: 'bypass', // 未匹配的请求直接放行
     });
+    console.log('[App] MSW Mock 已启动');
+  } else if (import.meta.env.DEV) {
+    console.log('[App] 连接真实后端 API');
   }
 
   ReactDOM.createRoot(document.getElementById('root')!).render(
