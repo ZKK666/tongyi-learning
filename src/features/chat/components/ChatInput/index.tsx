@@ -7,7 +7,7 @@
  * - 支持快捷键（Enter 发送，Shift+Enter 换行）
  * - 显示发送中状态
  */
-import { useState, useRef, KeyboardEvent } from 'react';
+import { useState, KeyboardEvent } from 'react';
 import { Button, Input, message } from 'antd';
 import { SendOutlined, StopOutlined } from '@ant-design/icons';
 import { v4 as uuidv4 } from 'uuid';
@@ -24,7 +24,6 @@ const { TextArea } = Input;
  */
 export function ChatInput() {
   const [inputValue, setInputValue] = useState('');
-  const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const { isMobile } = useResponsive();
   const safeArea = useSafeArea();
 
@@ -156,7 +155,6 @@ export function ChatInput() {
       <div className="max-w-3xl mx-auto p-4">
         <div className="relative">
           <TextArea
-            ref={textAreaRef as any}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}

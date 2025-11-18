@@ -127,8 +127,10 @@ export function useChatStream(): UseChatStreamReturn {
         let finalSegments: Segment[] = [];
 
         // 读取流数据
-        while (true) {
-          const { done, value } = await reader.read();
+        let done = false;
+        while (!done) {
+          const result = await reader.read();
+          done = result.done;
 
           if (done) {
             logger.info('Stream ended');
@@ -136,7 +138,7 @@ export function useChatStream(): UseChatStreamReturn {
           }
 
           // 解码并追加到缓冲区
-          buffer += decoder.decode(value, { stream: true });
+          buffer += decoder.decode(result.value, { stream: true });
 
           // 按 SSE 格式分割处理
           const lines = buffer.split('\n\n');
