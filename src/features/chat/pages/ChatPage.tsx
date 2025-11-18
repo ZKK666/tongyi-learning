@@ -44,10 +44,29 @@ export default function ChatPage() {
     setKeyword,
     totalCount,
     currentIndex,
+    currentResult,
     goToNext,
     goToPrevious,
     clearSearch,
   } = useMessageSearch({ messages });
+
+  // 滚动触发器：每次递增时触发滚动到当前搜索结果
+  const [scrollTrigger, setScrollTrigger] = useState(0);
+
+  // 包装导航函数，添加滚动触发
+  const handleGoToNext = () => {
+    goToNext();
+    setScrollTrigger((prev) => prev + 1);
+  };
+
+  const handleGoToPrevious = () => {
+    goToPrevious();
+    setScrollTrigger((prev) => prev + 1);
+  };
+
+  // 计算需要滚动到的消息 ID
+  // 使用 scrollTrigger 作为触发器，避免自动滚动
+  const scrollToMessageId = scrollTrigger > 0 ? currentResult?.messageId : null;
 
   // 导出功能
   const { exportMarkdown, exportPDF } = useExportMessages();
@@ -117,14 +136,17 @@ export default function ChatPage() {
           setKeyword={setKeyword}
           totalCount={totalCount}
           currentIndex={currentIndex}
-          onNext={goToNext}
-          onPrevious={goToPrevious}
+          onNext={handleGoToNext}
+          onPrevious={handleGoToPrevious}
           onClose={handleCloseSearch}
         />
       )}
 
       {/* 消息列表 */}
-      <MessageList />
+      <MessageList
+        scrollToMessageId={scrollToMessageId}
+        scrollTrigger={scrollTrigger}
+      />
 
       {/* 输入框 */}
       <ChatInput />

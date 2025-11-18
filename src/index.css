@@ -153,6 +153,34 @@ body {
   font-size: 14px;
 }
 
+/* 搜索结果高亮动画 */
+@keyframes searchHighlight {
+  0% {
+    background-color: rgba(250, 204, 21, 0.4);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.search-highlight {
+  animation: searchHighlight 2s ease-out;
+  border-radius: 8px;
+}
+
+.dark .search-highlight {
+  animation: searchHighlightDark 2s ease-out;
+}
+
+@keyframes searchHighlightDark {
+  0% {
+    background-color: rgba(250, 204, 21, 0.3);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
 /* Ant Design 样式覆盖 */
 .ant-btn-primary {
   background: var(--color-primary);

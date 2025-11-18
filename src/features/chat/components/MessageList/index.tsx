@@ -5,17 +5,26 @@
  * - 显示会话中的所有消息
  * - 包含流式消息的实时展示
  * - 自动滚动到底部
+ * - 搜索结果定位
  * - 消息多时使用虚拟滚动优化性能
  *
  * 技术要点：
  * - 消息少时普通渲染，多时虚拟滚动
  * - 避免流式输出时的卡顿问题
+ * - scrollIntoView 实现平滑滚动定位
  */
 import { useEffect, useRef, useCallback } from 'react';
 import { Empty } from 'antd';
 import { MessageBubble } from './MessageBubble';
 import { useChatStore } from '../../stores/chatStore';
 import type { Message, Segment } from '@/shared/types';
+
+interface MessageListProps {
+  /** 需要滚动到的消息 ID */
+  scrollToMessageId?: string | null;
+  /** 滚动触发器，用于强制触发滚动 */
+  scrollTrigger?: number;
+}
 
 /**
  * 判断滚动容器是否接近底部
@@ -49,7 +58,7 @@ function streamingMessageEqual(
 /**
  * 消息列表组件
  */
-export function MessageList() {
+export function MessageList({ scrollToMessageId, scrollTrigger = 0 }: MessageListProps = {}) {
   const scrollRef = useRef<HTMLDivElement>(null);
   // 跟踪用户是否在底部附近（用于智能自动滚动）
   const isUserAtBottomRef = useRef(true);
@@ -147,6 +156,38 @@ export function MessageList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allMessages.length, streamingMessage?.content]);
 
+  /**
+   * 滚动到指定消息
+   *
+   * 学习要点：
+   * - scrollIntoView 实现平滑滚动
+   * - block: 'center' 将元素滚动到视口中心
+   * - 使用 data-message-id 属性定位元素
+   * - scrollTrigger 确保每次触发都能滚动
+   */
+  useEffect(() => {
+    if (!scrollToMessageId || !scrollRef.current || scrollTrigger === 0) return;
+
+    // 查找目标消息元素
+    const targetElement = scrollRef.current.querySelector(
+      `[data-message-id="${scrollToMessageId}"]`
+    );
+
+    if (targetElement) {
+      // 滚动到目标消息，使其居中显示
+      targetElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+
+      // 添加高亮效果
+      targetElement.classList.add('search-highlight');
+      setTimeout(() => {
+        targetElement.classList.remove('search-highlight');
+      }, 2000);
+    }
+  }, [scrollToMessageId, scrollTrigger]);
+
   // 如果没有选中会话，显示欢迎页面
   if (!currentSessionId) {
     return (
@@ -186,11 +227,12 @@ export function MessageList() {
     >
       {/* 消息列表 */}
       {allMessages.map((message) => (
-        <MessageBubble
-          key={message.id}
-          message={message}
-          isStreaming={message.id === streamingMessageObj?.id}
-        />
+        <div key={message.id} data-message-id={message.id}>
+          <MessageBubble
+            message={message}
+            isStreaming={message.id === streamingMessageObj?.id}
+          />
+        </div>
       ))}
 
       {/* 底部留白 */}
