@@ -22,9 +22,23 @@ import type { Message, Segment } from '@/shared/types';
  */
 export function MessageList() {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { getCurrentMessages, streamingMessage, currentSessionId } = useChatStore();
 
-  const messages = getCurrentMessages();
+  /**
+   * 使用选择器订阅状态
+   *
+   * 学习要点：
+   * - Zustand 需要使用选择器来正确触发重新渲染
+   * - 直接解构 useChatStore() 可能不会响应内部状态变化
+   * - 每个状态单独选择，确保精确更新
+   */
+  const streamingMessage = useChatStore((state) => state.streamingMessage);
+  const currentSessionId = useChatStore((state) => state.currentSessionId);
+  const messagesBySession = useChatStore((state) => state.messagesBySession);
+
+  // 获取当前会话消息
+  const messages = currentSessionId
+    ? messagesBySession[currentSessionId] || []
+    : [];
 
   // 构建流式消息对象（如果有）
   const streamingMessageObj: Message | null = streamingMessage
