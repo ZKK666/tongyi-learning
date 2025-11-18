@@ -146,6 +146,7 @@ export default function ChatPage() {
       <MessageList
         scrollToMessageId={scrollToMessageId}
         scrollTrigger={scrollTrigger}
+        searchKeyword={showSearch ? keyword : ''}
       />
 
       {/* 输入框 */}

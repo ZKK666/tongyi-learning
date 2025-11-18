@@ -24,6 +24,8 @@ interface MessageListProps {
   scrollToMessageId?: string | null;
   /** 滚动触发器，用于强制触发滚动 */
   scrollTrigger?: number;
+  /** 搜索关键词，用于高亮显示 */
+  searchKeyword?: string;
 }
 
 /**
@@ -58,7 +60,7 @@ function streamingMessageEqual(
 /**
  * 消息列表组件
  */
-export function MessageList({ scrollToMessageId, scrollTrigger = 0 }: MessageListProps = {}) {
+export function MessageList({ scrollToMessageId, scrollTrigger = 0, searchKeyword = '' }: MessageListProps = {}) {
   const scrollRef = useRef<HTMLDivElement>(null);
   // 跟踪用户是否在底部附近（用于智能自动滚动）
   const isUserAtBottomRef = useRef(true);
@@ -231,6 +233,7 @@ export function MessageList({ scrollToMessageId, scrollTrigger = 0 }: MessageLis
           <MessageBubble
             message={message}
             isStreaming={message.id === streamingMessageObj?.id}
+            searchKeyword={searchKeyword}
           />
         </div>
       ))}

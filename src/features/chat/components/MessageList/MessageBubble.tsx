@@ -18,10 +18,12 @@ import { ROLE_NAMES } from '@/shared/constants';
 import { MarkdownRenderer } from '@/shared/components/MarkdownRenderer';
 import { CardRenderer } from '@/features/cards';
 import { ToolCallRenderer } from '../ToolCallRenderer';
+import { highlightText } from '../../hooks/useMessageSearch';
 
 interface MessageBubbleProps {
   message: Message;
   isStreaming?: boolean;
+  searchKeyword?: string;
 }
 
 /**
@@ -29,14 +31,26 @@ interface MessageBubbleProps {
  */
 function SegmentRenderer({
   segment,
-  isUserMessage
+  isUserMessage,
+  searchKeyword = ''
 }: {
   segment: Segment;
   isUserMessage: boolean;
+  searchKeyword?: string;
 }) {
   if (isTextSegment(segment)) {
     // 用户消息直接显示文本，AI 消息使用 Markdown 渲染
     if (isUserMessage) {
+      // 如果有搜索关键词，使用高亮
+      if (searchKeyword) {
+        const highlightedHtml = highlightText(segment.text, searchKeyword);
+        return (
+          <div
+            className="whitespace-pre-wrap break-words"
+            dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+          />
+        );
+      }
       return (
         <div className="whitespace-pre-wrap break-words">
           {segment.text}
@@ -44,6 +58,11 @@ function SegmentRenderer({
       );
     }
 
+    // AI 消息：先高亮再渲染 Markdown
+    if (searchKeyword) {
+      const highlightedContent = highlightText(segment.text, searchKeyword);
+      return <MarkdownRenderer content={highlightedContent} />;
+    }
     return <MarkdownRenderer content={segment.text} />;
   }
 
@@ -64,7 +83,7 @@ function SegmentRenderer({
  * 使用 memo 优化渲染性能
  */
 export const MessageBubble = memo(
-  function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
+  function MessageBubble({ message, isStreaming, searchKeyword = '' }: MessageBubbleProps) {
     const [copied, setCopied] = useState(false);
     const { message: messageApi } = App.useApp();
     const isUser = message.role === 'user';
@@ -127,6 +146,7 @@ export const MessageBubble = memo(
                 key={index}
                 segment={segment}
                 isUserMessage={isUser}
+                searchKeyword={searchKeyword}
               />
             ))}
 
@@ -164,7 +184,8 @@ export const MessageBubble = memo(
       prev.message.id !== next.message.id ||
       prev.message.status !== next.message.status ||
       prev.message.segments.length !== next.message.segments.length ||
-      prev.isStreaming !== next.isStreaming
+      prev.isStreaming !== next.isStreaming ||
+      prev.searchKeyword !== next.searchKeyword // 关键词变化时需要重新渲染
     ) {
       return false; // 不相等，需要重新渲染
     }
