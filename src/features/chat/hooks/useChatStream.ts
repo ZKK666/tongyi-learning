@@ -163,15 +163,30 @@ export function useChatStream(): UseChatStreamReturn {
 
                 // 处理完成信号
                 if (data.finish_reason === 'stop') {
-                  // 构建最终消息
+                  // 构建最终消息的 segments
+                  // 始终保留文本内容，同时添加其他结构化数据（卡片、工具等）
+                  const messageSegments: Segment[] = [];
+
+                  // 添加文本内容（打字机效果的内容）
+                  if (fullContent) {
+                    messageSegments.push({ type: 'text', text: fullContent });
+                  }
+
+                  // 添加其他结构化段落（卡片、工具调用等）
+                  if (finalSegments.length > 0) {
+                    messageSegments.push(...finalSegments);
+                  }
+
+                  // 如果没有任何内容，添加空文本
+                  if (messageSegments.length === 0) {
+                    messageSegments.push({ type: 'text', text: '' });
+                  }
+
                   const finalMessage: Message = {
                     id: messageId,
                     sessionId: params.sessionId,
                     role: 'assistant',
-                    segments:
-                      finalSegments.length > 0
-                        ? finalSegments
-                        : [{ type: 'text', text: fullContent }],
+                    segments: messageSegments,
                     status: 'done',
                     createdAt: new Date().toISOString(),
                   };
