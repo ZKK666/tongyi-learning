@@ -21,22 +21,22 @@ import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 
 @Module({
   imports: [
-    // 限流模块配置
+    // 限流模块配置（开发环境放宽限制）
     ThrottlerModule.forRoot([
       {
         name: 'short',
         ttl: 1000,   // 1 秒
-        limit: 3,    // 最多 3 次请求
+        limit: 10,   // 最多 10 次请求
       },
       {
         name: 'medium',
         ttl: 10000,  // 10 秒
-        limit: 20,   // 最多 20 次请求
+        limit: 50,   // 最多 50 次请求
       },
       {
         name: 'long',
         ttl: 60000,  // 60 秒
-        limit: 100,  // 最多 100 次请求
+        limit: 200,  // 最多 200 次请求
       },
     ]),
     AuthModule,     // 认证模块

@@ -81,35 +81,48 @@ export class ChatController {
   ): Promise<void> {
     console.log('[ChatController] 流式请求:', dto.sessionId);
 
-    // 设置 SSE 响应头
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no'); // 禁用 Nginx 缓冲
+    try {
+      // 设置 SSE 响应头
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no'); // 禁用 Nginx 缓冲
 
-    // 立即发送响应头
-    res.flushHeaders();
+      // 立即发送响应头
+      res.flushHeaders();
 
-    // 调用服务处理流式响应
-    const cleanup = this.chatService.streamResponse(
-      dto,
-      // 发送数据块
-      (data: Record<string, unknown>) => {
-        // 手动构造 SSE 格式：data: {...}\n\n
-        const sseData = `data: ${JSON.stringify(data)}\n\n`;
-        res.write(sseData);
-      },
-      // 完成
-      () => {
-        res.end();
-        console.log('[ChatController] 流式响应完成');
-      },
-    );
+      // 调用服务处理流式响应
+      const cleanup = this.chatService.streamResponse(
+        dto,
+        // 发送数据块
+        (data: Record<string, unknown>) => {
+          // 手动构造 SSE 格式：data: {...}\n\n
+          const sseData = `data: ${JSON.stringify(data)}\n\n`;
+          res.write(sseData);
+        },
+        // 完成
+        () => {
+          res.end();
+          console.log('[ChatController] 流式响应完成');
+        },
+      );
 
-    // 监听客户端断开连接
-    res.on('close', () => {
-      console.log('[ChatController] 客户端断开连接');
-      cleanup();
-    });
+      // 监听客户端断开连接
+      res.on('close', () => {
+        console.log('[ChatController] 客户端断开连接');
+        cleanup();
+      });
+    } catch (error) {
+      console.error('[ChatController] 流式请求错误:', error);
+      if (!res.headersSent) {
+        res.status(500).json({
+          success: false,
+          error: {
+            code: 500,
+            message: error instanceof Error ? error.message : '服务器内部错误',
+          },
+        });
+      }
+    }
   }
 }

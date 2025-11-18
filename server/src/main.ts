@@ -43,7 +43,7 @@ async function bootstrap() {
     new ValidationPipe({
       transform: true,           // 自动类型转换
       whitelist: true,           // 剥离 DTO 中未定义的属性
-      forbidNonWhitelisted: true, // 有未定义属性时报错
+      forbidNonWhitelisted: false, // 开发阶段不报错，只剥离
       transformOptions: {
         enableImplicitConversion: true, // 隐式类型转换
       },
