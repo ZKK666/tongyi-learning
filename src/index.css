@@ -1,0 +1,163 @@
+/**
+ * 全局样式文件
+ *
+ * 包含：
+ * - Tailwind CSS 基础样式
+ * - Ant Design 样式覆盖
+ * - 自定义全局样式
+ * - CSS 变量定义
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CSS 变量 - 用于主题切换 */
+:root {
+  /* 安全区域 */
+  --safe-area-inset-top: env(safe-area-inset-top);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom);
+  --safe-area-inset-left: env(safe-area-inset-left);
+  --safe-area-inset-right: env(safe-area-inset-right);
+
+  /* 主题色 */
+  --color-primary: #6366f1;
+  --color-primary-hover: #4f46e5;
+
+  /* 背景色 */
+  --bg-main: #ffffff;
+  --bg-sidebar: #f7f8fa;
+  --bg-message-user: #f3f4f6;
+  --bg-message-assistant: #ffffff;
+
+  /* 文字色 */
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+
+  /* 边框色 */
+  --border-color: #e5e7eb;
+}
+
+/* 暗色主题变量 */
+.dark {
+  --bg-main: #111111;
+  --bg-sidebar: #1f1f1f;
+  --bg-message-user: #2d2d2d;
+  --bg-message-assistant: #1f1f1f;
+
+  --text-primary: #f9fafb;
+  --text-secondary: #9ca3af;
+
+  --border-color: #374151;
+}
+
+/* 基础样式重置 */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  height: 100%;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #4b5563;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* 移动端软键盘适配 */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* 消息气泡动画 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-enter {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+/* 流式输出光标 */
+@keyframes blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.streaming-cursor::after {
+  content: '▋';
+  animation: blink 1s step-end infinite;
+  color: var(--color-primary);
+}
+
+/* Markdown 代码块样式 */
+.markdown-body pre {
+  background: #1e1e1e;
+  border-radius: 8px;
+  padding: 16px;
+  overflow-x: auto;
+}
+
+.markdown-body code {
+  font-family: 'Fira Code', 'Consolas', monospace;
+  font-size: 14px;
+}
+
+/* Ant Design 样式覆盖 */
+.ant-btn-primary {
+  background: var(--color-primary);
+}
+
+.ant-btn-primary:hover {
+  background: var(--color-primary-hover) !important;
+}
