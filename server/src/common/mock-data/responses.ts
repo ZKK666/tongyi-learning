@@ -172,5 +172,6 @@ export const MOCK_USER = {
   id: 'user-1',
   name: '测试用户',
   email: 'test@example.com',
-  avatar: undefined,
+  avatar: '/avatars/default.png',
+  role: 'admin' as const,
 };

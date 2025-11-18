@@ -35,19 +35,16 @@ export class AuthController {
    *
    * 学习要点：
    * - @HttpCode(200) 覆盖默认的 201（POST 默认返回 201）
-   * - 返回统一的 ApiResponse 格式
+   * - 返回格式与前端 MSW Mock 保持一致
    */
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() loginDto: LoginDto): Promise<ApiResponse<User>> {
+  async login(@Body() loginDto: LoginDto): Promise<{ token: string; user: User }> {
     console.log('[AuthController] 登录请求:', loginDto.username);
 
-    const user = await this.authService.login(loginDto);
+    const result = await this.authService.login(loginDto);
 
-    return {
-      success: true,
-      data: user,
-    };
+    return result;
   }
 
   /**

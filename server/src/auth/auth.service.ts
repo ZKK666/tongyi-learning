@@ -25,9 +25,9 @@ export class AuthService {
    *   4. 记录登录日志
    *
    * @param loginDto 登录信息
-   * @returns 用户信息
+   * @returns 包含 token 和用户信息的对象
    */
-  async login(loginDto: LoginDto): Promise<User> {
+  async login(loginDto: LoginDto): Promise<{ token: string; user: User }> {
     // Mock 实现：任何账号密码都能登录
     // 只是简单地返回模拟用户数据
     console.log(`[AuthService] 用户登录: ${loginDto.username}`);
@@ -35,12 +35,17 @@ export class AuthService {
     // 模拟网络延迟
     await this.delay(300);
 
+    // 生成 Mock token（格式与前端 MSW 保持一致）
+    const token = `mock_token_${MOCK_USER.id}_${Date.now()}`;
+
     // 返回 Mock 用户，用登录名作为显示名
-    return {
+    const user: User = {
       ...MOCK_USER,
       name: loginDto.username,
       email: `${loginDto.username}@example.com`,
     };
+
+    return { token, user };
   }
 
   /**

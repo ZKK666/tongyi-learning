@@ -19,6 +19,7 @@ export interface User {
   name: string;
   email: string;
   avatar?: string;  // 可选属性
+  role?: 'user' | 'admin';  // 用户角色
 }
 
 /**
