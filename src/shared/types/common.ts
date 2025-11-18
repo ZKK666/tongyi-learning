@@ -45,7 +45,30 @@ export type MessageStatus = 'sending' | 'streaming' | 'done' | 'error';
 /**
  * 内容片段类型
  */
-export type SegmentType = 'text' | 'card' | 'image' | 'code';
+export type SegmentType = 'text' | 'card' | 'image' | 'code' | 'tool_call';
+
+/**
+ * 工具调用状态
+ */
+export type ToolCallStatus = 'pending' | 'running' | 'done' | 'error';
+
+/**
+ * 工具调用片段
+ *
+ * 用于展示 AI 调用外部工具的过程
+ */
+export interface ToolCallSegment {
+  type: 'tool_call';
+  toolId: string;
+  toolName: string;
+  toolDisplayName: string;
+  status: ToolCallStatus;
+  input?: Record<string, unknown>;
+  output?: unknown;
+  error?: string;
+  startTime?: string;
+  endTime?: string;
+}
 
 /**
  * 文本片段
@@ -85,7 +108,7 @@ export interface CodeSegment {
 /**
  * 内容片段联合类型
  */
-export type Segment = TextSegment | CardSegment | ImageSegment | CodeSegment;
+export type Segment = TextSegment | CardSegment | ImageSegment | CodeSegment | ToolCallSegment;
 
 /**
  * 消息结构
@@ -137,4 +160,11 @@ export function isImageSegment(segment: Segment): segment is ImageSegment {
  */
 export function isCodeSegment(segment: Segment): segment is CodeSegment {
   return segment.type === 'code';
+}
+
+/**
+ * 类型守卫：判断是否为工具调用片段
+ */
+export function isToolCallSegment(segment: Segment): segment is ToolCallSegment {
+  return segment.type === 'tool_call';
 }

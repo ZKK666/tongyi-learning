@@ -253,13 +253,83 @@ $\\Delta = (-5)^2 - 4(1)(6) = 25 - 24 = 1 > 0$
 /**
  * 根据用户输入匹配回复模板
  */
+/**
+ * 生成工具调用数据
+ */
+export function generateToolCall(toolName: string, input: Record<string, unknown> = {}) {
+  const tools: Record<string, { displayName: string; output: unknown }> = {
+    web_search: {
+      displayName: '网页搜索',
+      output: {
+        results: [
+          { title: '搜索结果 1', url: 'https://example.com/1', snippet: '这是搜索结果摘要...' },
+          { title: '搜索结果 2', url: 'https://example.com/2', snippet: '另一个搜索结果...' },
+        ],
+        total: 2,
+      },
+    },
+    calculator: {
+      displayName: '计算器',
+      output: { result: 42 },
+    },
+    code_interpreter: {
+      displayName: '代码解释器',
+      output: { stdout: 'Hello, World!\n', exitCode: 0 },
+    },
+    image_generator: {
+      displayName: '图片生成',
+      output: { url: 'https://placeholder.com/generated.png', prompt: input.prompt || '生成的图片' },
+    },
+  };
+
+  const tool = tools[toolName] || { displayName: toolName, output: { status: 'ok' } };
+
+  return {
+    toolId: `tool_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    toolName,
+    toolDisplayName: tool.displayName,
+    input,
+    output: tool.output,
+  };
+}
+
 export function matchReplyTemplate(input: string): {
   text: string;
   needsCard: boolean;
   cardType?: string;
   cardData?: unknown;
+  toolCalls?: Array<{
+    toolId: string;
+    toolName: string;
+    toolDisplayName: string;
+    input?: Record<string, unknown>;
+    output?: unknown;
+  }>;
 } {
   const lowerInput = input.toLowerCase();
+
+  // 搜索查询 - 触发工具调用
+  if (/搜索|查找|search|找一下/.test(lowerInput)) {
+    const query = input.replace(/搜索|查找|search|找一下|帮我|一下/g, '').trim() || '人工智能';
+    const toolCall = generateToolCall('web_search', { query });
+    return {
+      text: `我已经为你搜索了"${query}"，以下是搜索结果：\n\n根据搜索结果，我发现了一些相关信息。这些信息来自多个可靠来源，可以帮助你了解这个话题的各个方面。`,
+      needsCard: false,
+      toolCalls: [toolCall],
+    };
+  }
+
+  // 计算 - 触发工具调用
+  if (/计算|算一下|多少|等于/.test(lowerInput)) {
+    const expression = input.match(/[\d+\-*/().]+/)?.[0] || '1+1';
+    const toolCall = generateToolCall('calculator', { expression });
+    const result = (toolCall.output as { result: number }).result;
+    return {
+      text: `好的，我来帮你计算。\n\n计算结果是：**${result}**`,
+      needsCard: false,
+      toolCalls: [toolCall],
+    };
+  }
 
   // 天气查询
   if (/天气|气温|下雨|温度|weather/.test(lowerInput)) {

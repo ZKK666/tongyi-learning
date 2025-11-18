@@ -13,10 +13,11 @@ import { UserOutlined, RobotOutlined, CopyOutlined, CheckOutlined } from '@ant-d
 import { useState } from 'react';
 import dayjs from 'dayjs';
 import type { Message, Segment } from '@/shared/types';
-import { isTextSegment, isCardSegment } from '@/shared/types';
+import { isTextSegment, isCardSegment, isToolCallSegment } from '@/shared/types';
 import { ROLE_NAMES } from '@/shared/constants';
 import { MarkdownRenderer } from '@/shared/components/MarkdownRenderer';
 import { CardRenderer } from '@/features/cards';
+import { ToolCallRenderer } from '../ToolCallRenderer';
 
 interface MessageBubbleProps {
   message: Message;
@@ -48,6 +49,10 @@ function SegmentRenderer({
 
   if (isCardSegment(segment)) {
     return <CardRenderer segment={segment} />;
+  }
+
+  if (isToolCallSegment(segment)) {
+    return <ToolCallRenderer segment={segment} />;
   }
 
   return null;

@@ -63,15 +63,37 @@ export const chatHandlers = [
               finish_reason: 'stop',
             };
 
+            // 构建 segments
+            const segments: Array<Record<string, unknown>> = [];
+
+            // 添加工具调用 segments
+            if (reply.toolCalls && reply.toolCalls.length > 0) {
+              for (const toolCall of reply.toolCalls) {
+                segments.push({
+                  type: 'tool_call',
+                  toolId: toolCall.toolId,
+                  toolName: toolCall.toolName,
+                  toolDisplayName: toolCall.toolDisplayName,
+                  status: 'done',
+                  input: toolCall.input,
+                  output: toolCall.output,
+                  startTime: new Date(Date.now() - 2000).toISOString(),
+                  endTime: new Date().toISOString(),
+                });
+              }
+            }
+
             // 如果需要卡片，添加卡片数据
             if (reply.needsCard && reply.cardType && reply.cardData) {
-              finalChunk.segments = [
-                {
-                  type: 'card',
-                  cardType: reply.cardType,
-                  payload: reply.cardData,
-                },
-              ];
+              segments.push({
+                type: 'card',
+                cardType: reply.cardType,
+                payload: reply.cardData,
+              });
+            }
+
+            if (segments.length > 0) {
+              finalChunk.segments = segments;
             }
 
             controller.enqueue(
@@ -114,15 +136,37 @@ export const chatHandlers = [
       createdAt: new Date().toISOString(),
     };
 
+    // 构建 segments
+    const segments: Array<Record<string, unknown>> = [];
+
+    // 添加工具调用
+    if (reply.toolCalls && reply.toolCalls.length > 0) {
+      for (const toolCall of reply.toolCalls) {
+        segments.push({
+          type: 'tool_call',
+          toolId: toolCall.toolId,
+          toolName: toolCall.toolName,
+          toolDisplayName: toolCall.toolDisplayName,
+          status: 'done',
+          input: toolCall.input,
+          output: toolCall.output,
+          startTime: new Date(Date.now() - 2000).toISOString(),
+          endTime: new Date().toISOString(),
+        });
+      }
+    }
+
     // 添加卡片数据
     if (reply.needsCard && reply.cardType && reply.cardData) {
-      response.segments = [
-        {
-          type: 'card',
-          cardType: reply.cardType,
-          payload: reply.cardData,
-        },
-      ];
+      segments.push({
+        type: 'card',
+        cardType: reply.cardType,
+        payload: reply.cardData,
+      });
+    }
+
+    if (segments.length > 0) {
+      response.segments = segments;
     }
 
     return HttpResponse.json(response);
